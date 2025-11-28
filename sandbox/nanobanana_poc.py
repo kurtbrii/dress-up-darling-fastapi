@@ -20,11 +20,12 @@ response = client.models.generate_content(
     model="gemini-2.5-flash-image",
     contents=[
         "Create an image of this person wearing a banana costume",
+        # I need a base 64 here
         Image.open("assets/person.jpg"),
     ],
     config=types.GenerateContentConfig(
         image_config=types.ImageConfig(
-            aspect_ratio="16:9",
+            aspect_ratio="9:16",
         )
     ),
 )
@@ -35,7 +36,6 @@ for part in response.candidates[0].content.parts:
         image_bytes = part.inline_data.data
         base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-        print(base64_image)
         image = Image.open(io.BytesIO(image_bytes))
         image.show()
         break

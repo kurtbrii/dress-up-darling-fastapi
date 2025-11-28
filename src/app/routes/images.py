@@ -1,10 +1,12 @@
 import base64, io
+import time
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from google.genai import types
 from src.app.config import DEFAULT_PERSON_B64, DEFAULT_CLOTHES_B64
 from PIL import Image
+from src.app.helpers.constants import PROMPT
 
 from src.app.client import get_client
 from src.app.models import ImageGenerationRequest, ImageGenerationResponse
@@ -12,7 +14,7 @@ from src.app.models import ImageGenerationRequest, ImageGenerationResponse
 router = APIRouter(prefix="/images", tags=["images"])
 
 
-@router.post("/generate", response_model=ImageGenerationResponse)
+@router.post("/generate-image", response_model=ImageGenerationResponse)
 async def generate_image(request: ImageGenerationRequest):
     """
     Generate an image using Gemini's image generation model.
@@ -31,8 +33,9 @@ async def generate_image(request: ImageGenerationRequest):
         response = client.models.generate_content(
             model="gemini-2.5-flash-image",
             contents=[
-                request.prompt,
-                # add the image of the person here
+                PROMPT,
+                Image.open(io.BytesIO(base64.b64decode(request.person_image_b64))),
+                Image.open(io.BytesIO(base64.b64decode(request.clothes_image_b64))),
             ],
             config=types.GenerateContentConfig(
                 image_config=types.ImageConfig(
@@ -46,20 +49,21 @@ async def generate_image(request: ImageGenerationRequest):
                 image_bytes = part.inline_data.data
                 base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-                print(base64_image)
-                image = Image.open(io.BytesIO(image_bytes))
-                image.show()
-                break
+                # ! for debugging purposes: show the image
+                # image = Image.open(io.BytesIO(image_bytes))
+                # image.show()
 
-        print(response)
+                return ImageGenerationResponse(
+                    status="success",
+                    generated_image_b64=base64_image,
+                )
+        return ImageGenerationResponse(
+            status="error",
+            message="Couldn't generate image. Please try again.",
+        )
 
-        # return StreamingResponse(
-        #     iter([response.candidates[0].content.parts[0].inline_data.data]),
-        #     media_type="image/png",
-        #     headers={"Content-Disposition": "attachment; filename=generated_image.png"},
-        # )
     except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e),
-        }
+        return ImageGenerationResponse(
+            status="error",
+            message=str(e),
+        )

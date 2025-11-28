@@ -10,6 +10,7 @@ from src.app import create_app
 # Create the FastAPI application
 app = create_app()
 
+
 if __name__ == "__main__":
     import uvicorn
 

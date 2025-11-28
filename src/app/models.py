@@ -16,7 +16,6 @@ class AspectRatio(str, Enum):
 class ImageGenerationRequest(BaseModel):
     """Request model for image generation"""
 
-    prompt: str = Field(..., description="The prompt for image generation")
     aspect_ratio: AspectRatio = Field(
         default=AspectRatio.PORTRAIT, description="Aspect ratio of the image"
     )
@@ -31,10 +30,11 @@ class ImageGenerationRequest(BaseModel):
 
 
 class ImageGenerationResponse(BaseModel):
-    """Response model for image generation status"""
+    """Response model for image generation"""
 
     status: str
-    message: str
+    message: Optional[str] = None
+    generated_image_b64: Optional[str] = None
 
 
 class HealthCheckResponse(BaseModel):
