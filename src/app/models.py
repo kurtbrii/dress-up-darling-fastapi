@@ -16,8 +16,7 @@ class AspectRatio(str, Enum):
 
     SQUARE = "1:1"
     PORTRAIT = "9:16"
-    LANDSCAPE = "4:3"
-    WIDE = "16:9"
+
 
 
 class ImageGenerationRequest(BaseModel):
@@ -38,6 +37,11 @@ class ImageGenerationRequest(BaseModel):
         default=None,
         description="API key for the Gemini API",
     )
+
+    shot_type: ShotType = Field(
+        default=ShotType.FULL_BODY, description="Shot type of the image"
+    )
+
 
     @field_validator('api_key')
     @classmethod

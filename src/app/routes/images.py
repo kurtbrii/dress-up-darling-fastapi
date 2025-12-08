@@ -9,6 +9,7 @@ from src.app.helpers.constants import PROMPT
 from fastapi import HTTPException
 from src.app.client import get_client
 from src.app.models import ImageGenerationRequest, ImageGenerationResponse
+from src.app.models import ShotType
 
 
 router = APIRouter(prefix="/images", tags=["images"])
@@ -25,8 +26,15 @@ async def generate_image(request: ImageGenerationRequest):
     - **person_image_b64**: Base64 encoded image of the person (optional, uses default if not provided)
     - **clothes_image_b64**: Base64 encoded image of the clothing (optional, uses default if not provided)
     - **api_key**: API key for the Gemini API (optional, uses default if not provided)
+    - **shot_type**: Shot type of the image (optional, uses default if not provided)
+    - **resolution**: Resolution of the image (optional, uses default if not provided)
     """
     client: Client = get_client(request.api_key)
+
+    SHOT_TYPES = {
+        ShotType.CLOSE_UP: "Close-up shot focusing on upper body and outfit details",
+        ShotType.FULL_BODY: "Full body shot showing the complete outfit from head to toe"
+    }
 
     try:
         # Use provided images or fallback to hardcoded defaults
@@ -35,7 +43,7 @@ async def generate_image(request: ImageGenerationRequest):
             model="gemini-2.5-flash-image",
             contents=[
                  PROMPT.format(
-                    shot_type="full_body" # TODO: use request.shot_type
+                    shot_type= SHOT_TYPES.get(request.shot_type),
                 ),
                 Image.open(io.BytesIO(base64.b64decode(request.person_image_b64))),
                 Image.open(io.BytesIO(base64.b64decode(request.clothes_image_b64))),
@@ -46,6 +54,11 @@ async def generate_image(request: ImageGenerationRequest):
                 )
             ),
         )
+
+
+        print("prompt", PROMPT.format(
+            shot_type= SHOT_TYPES.get(request.shot_type),
+        ))
 
         for part in response.candidates[0].content.parts:
             if part.inline_data:
