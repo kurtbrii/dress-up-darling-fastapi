@@ -3,19 +3,19 @@ Gemini client initialization and management.
 """
 
 import os
-from google import genai
 from dotenv import load_dotenv
+from google.genai import Client
 
 # Load environment variables
 load_dotenv()
 
-# Initialize Gemini client (singleton)
-_client = None
+# Cache Gemini clients by API key
+_clients = {}
 
 
-def get_client():
-    """Get or create the Gemini client instance"""
-    global _client
-    if _client is None:
-        _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    return _client
+def get_client(api_key: str) -> Client:
+    """Get or create the Gemini client instance for the given API key"""
+    global _clients
+    if api_key not in _clients:
+        _clients[api_key] = Client(api_key=api_key)
+    return _clients[api_key]

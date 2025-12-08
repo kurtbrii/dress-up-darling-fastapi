@@ -3,13 +3,13 @@ import time
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from google.genai import types
-from src.app.config import DEFAULT_PERSON_B64, DEFAULT_CLOTHES_B64
+from google.genai import types, Client
 from PIL import Image
 from src.app.helpers.constants import PROMPT
-
+from fastapi import HTTPException
 from src.app.client import get_client
 from src.app.models import ImageGenerationRequest, ImageGenerationResponse
+
 
 router = APIRouter(prefix="/images", tags=["images"])
 
@@ -24,8 +24,9 @@ async def generate_image(request: ImageGenerationRequest):
     - **aspect_ratio**: Image aspect ratio (default: "9:16")
     - **person_image_b64**: Base64 encoded image of the person (optional, uses default if not provided)
     - **clothes_image_b64**: Base64 encoded image of the clothing (optional, uses default if not provided)
+    - **api_key**: API key for the Gemini API (optional, uses default if not provided)
     """
-    client = get_client()
+    client: Client = get_client(request.api_key)
 
     try:
         # Use provided images or fallback to hardcoded defaults
@@ -33,7 +34,9 @@ async def generate_image(request: ImageGenerationRequest):
         response = client.models.generate_content(
             model="gemini-2.5-flash-image",
             contents=[
-                PROMPT,
+                 PROMPT.format(
+                    shot_type="full_body" # TODO: use request.shot_type
+                ),
                 Image.open(io.BytesIO(base64.b64decode(request.person_image_b64))),
                 Image.open(io.BytesIO(base64.b64decode(request.clothes_image_b64))),
             ],
@@ -63,7 +66,8 @@ async def generate_image(request: ImageGenerationRequest):
         )
 
     except Exception as e:
-        return ImageGenerationResponse(
-            status="error",
-            message=str(e),
-        )
+        raise HTTPException(status_code=400, detail=str(e))
+        # return ImageGenerationResponse(
+        #     status="error",
+        #     message=str(e),
+        # )

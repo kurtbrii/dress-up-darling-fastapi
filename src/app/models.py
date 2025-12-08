@@ -1,8 +1,15 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+
+
+class ShotType(str, Enum):
+    """Enum for supported shot types"""
+
+    CLOSE_UP = "close_up"
+    FULL_BODY = "full_body"
 
 class AspectRatio(str, Enum):
     """Enum for supported aspect ratios"""
@@ -19,14 +26,25 @@ class ImageGenerationRequest(BaseModel):
     aspect_ratio: AspectRatio = Field(
         default=AspectRatio.PORTRAIT, description="Aspect ratio of the image"
     )
-    person_image_b64: Optional[str] = Field(
+    person_image_b64: str = Field(
         default=None,
         description="Base64 encoded image of the person to dress up",
     )
-    clothes_image_b64: Optional[str] = Field(
+    clothes_image_b64: str = Field(
         default=None,
         description="Base64 encoded image of the outfit / clothing reference",
     )
+    api_key: str = Field(
+        default=None,
+        description="API key for the Gemini API",
+    )
+
+    @field_validator('api_key')
+    @classmethod
+    def validate_api_key(cls, v):
+        if not v or not v.strip():
+            raise ValueError('API key is required')
+        return v
 
 
 class ImageGenerationResponse(BaseModel):
